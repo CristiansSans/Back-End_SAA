@@ -3,10 +3,11 @@ const tickets = express.Router()
 const cors = require('cors')
 const email = require('../modelsMail/Mails')
 const mailCredentials = require('../private/mail-credentials')
+const io = require("../app")
 const Mails = new email(mailCredentials)
 const Ticket = require('../models/tickets')
 const Client = require('../models/clients')
-tickets.use(cors())
+
 
 
 tickets.get('/', async (req, res) => {
@@ -374,15 +375,18 @@ tickets.post('/', async (req, res) => {
                 try{
                     const createTicket = await Ticket.create(data)
                     if (createTicket) {
-                        const send = await Mails.sendMail(mail)
+                            var socket = req.app.get('io');
+                            socket.emit('ticket', 'world');
                         res.json(createTicket)
                     }
                 }catch(err){
                     console.log(err)
                     res.json(err)
                 }
+            }else{
+                res.json({status: "Not monitoring"})
             }
-            res.json({status: "Not monitoring"})
+            
         }
     } catch (err) {
         console.log(err)
