@@ -66,12 +66,12 @@ tickets.post('/', async (req, res) => {
             const data = {
                 client: findData[0].name,
                 site: item.site,
-                product: '',
+                product: req.body.hostname,
                 problem: "down",
                 idResource: "123",
-                ip: item.ip,
-                type: "down",
-                status: "Caido"
+                ip: req.body.hostadress,
+                type: req.body.hostalias,
+                status: ''
             }
             const mail = {
                 from: "SAA",
