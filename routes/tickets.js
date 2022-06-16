@@ -4,6 +4,7 @@ const cors = require('cors')
 const email = require('../modelsMail/Mails')
 const mailCredentials = require('../private/mail-credentials')
 const io = require("../app")
+const multer  = require('multer')
 const Mails = new email(mailCredentials)
 const Ticket = require('../models/tickets')
 const Client = require('../models/clients')
@@ -52,7 +53,12 @@ tickets.get('/monthtickets', async (req, res) => {
 })
 
 
-tickets.post('/', async (req, res) => {
+tickets.put('/:id', async (req, res) => {
+    console.log("param:"+req.params.hostname)
+	console.log("ip:"+req.body.ip)
+	console.log("hostname:"+req.body.hName)
+    console.log("hostadress:"+req.body.hostadress)
+	console.log("hostalias:"+req.body.hostalias)
     try {
         const findData = await Client.find({items: {$elemMatch:{ip: req.body.ip}}})
         if (findData) {
