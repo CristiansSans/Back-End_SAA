@@ -36,7 +36,6 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true, parameterLimit: 5
 
 //Websockets
 io.on('connection', socket  => {
-	console.log("socket")
 	socket.on('newTicket', data => {
 		io.emit('ticket', "data");
 	})
