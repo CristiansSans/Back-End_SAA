@@ -56,7 +56,7 @@ tickets.get('/monthtickets', async (req, res) => {
 
 tickets.put('/:ip', async (req, res) => {
     try {
-        const findData = await Client.find({items: {$elemMatch:{ip: req.body.ip}}})
+        const findData = await Client.find({items: {$elemMatch:{ip: req.params.ip}}})
         if (findData) {
             var item = ''
             for (const pc of findData[0].items) {
@@ -404,7 +404,7 @@ tickets.put('/:ip', async (req, res) => {
                                 }
                             });
                         });
-                        
+                        Mails.sendMail(mail)
                         res.json(createTicket)
                     }
                 }catch(err){
@@ -415,6 +415,8 @@ tickets.put('/:ip', async (req, res) => {
                 res.json({status: "Not monitoring"})
             }
             
+        }else{
+            res.json({status: "Not found"})
         }
     } catch (err) {
         console.log(err)
