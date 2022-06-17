@@ -3,6 +3,7 @@ const tickets = express.Router()
 const cors = require('cors')
 const email = require('../modelsMail/Mails')
 const mailCredentials = require('../private/mail-credentials')
+const smsCredential = require('../private/smsTokens')
 const io = require("../app")
 const multer  = require('multer')
 const Mails = new email(mailCredentials)
@@ -53,12 +54,7 @@ tickets.get('/monthtickets', async (req, res) => {
 })
 
 
-tickets.put('/:id', async (req, res) => {
-    console.log("param:"+req.params.hostname)
-	console.log("ip:"+req.body.ip)
-	console.log("hostname:"+req.body.hName)
-    console.log("hostadress:"+req.body.hostadress)
-	console.log("hostalias:"+req.body.hostalias)
+tickets.put('/:ip', async (req, res) => {
     try {
         const findData = await Client.find({items: {$elemMatch:{ip: req.body.ip}}})
         if (findData) {
@@ -72,10 +68,10 @@ tickets.put('/:id', async (req, res) => {
             const data = {
                 client: findData[0].name,
                 site: item.site,
-                product: req.body.hostname,
+                product: req.body.hName,
                 problem: "down",
                 idResource: "123",
-                ip: req.body.hostadress,
+                ip: req.params.ip,
                 type: req.body.hostalias,
                 status: ''
             }
@@ -272,7 +268,7 @@ tickets.put('/:id', async (req, res) => {
                             <tr>
                             <td align="left" style="font-size:0px;padding:15px 15px 15px 15px;word-break:break-word;">
                                 
-                    <div style="font-family:Ubuntu, Helvetica, Arial, sans-serif;font-size:13px;line-height:1.5;text-align:left;color:#000000;"><h2 style="font-size: 17px; font-family: Ubuntu, Helvetica, Arial; text-align: center;">Se ha generado un nuevo ticket relacionado a <span style="color: #3598db;">NOMBRE_CLIENTE</span></h2></div>
+                    <div style="font-family:Ubuntu, Helvetica, Arial, sans-serif;font-size:13px;line-height:1.5;text-align:left;color:#000000;"><h2 style="font-size: 17px; font-family: Ubuntu, Helvetica, Arial; text-align: center;">Se ha generado un nuevo ticket relacionado a <span style="color: #3598db;">${findData[0].name}</span></h2></div>
                     
                             </td>
                             </tr>
@@ -355,7 +351,7 @@ tickets.put('/:id', async (req, res) => {
                 
                         <tr class="trr">
                         <th class="thh">IP Dispositivo</th>
-                        <td class="tdd">${item.ip}</td>
+                        <td class="tdd">${req.params.ip}</td>
                         
                         </tr>
                 
@@ -381,8 +377,34 @@ tickets.put('/:id', async (req, res) => {
                 try{
                     const createTicket = await Ticket.create(data)
                     if (createTicket) {
-                            var socket = req.app.get('io');
-                            socket.emit('ticket', 'world');
+                        var socket = req.app.get('io');
+                        socket.emit('ticket', 'world');
+
+                        var twilio = require('twilio');
+
+                        // Create a new REST API client to make authenticated requests against the
+                        // twilio back end
+                        var client = new twilio(smsCredential.acount_sid, smsCredential.auth_token);
+
+                        smsCredential.numbers.forEach(element => {
+                            client.messages.create({
+                                to:element,
+                                from:'+19807059451',
+                                body:`¡Se ha detectado una nueva caida! \n Cliente: ${findData[0].name} \n IP: ${req.params.ip} \n Estado: Down`
+                            }, function(error, message) {
+                                if (!error) {
+                                    console.log('Success! The SID for this SMS message is:');
+                                    console.log(message.sid);
+                        
+                                    console.log('Message sent on:');
+                                    console.log(message.dateCreated);
+                                } else {
+                                    console.log('Oops! There was an error.');
+                                    console.log(error)
+                                }
+                            });
+                        });
+                        
                         res.json(createTicket)
                     }
                 }catch(err){
@@ -401,42 +423,6 @@ tickets.put('/:id', async (req, res) => {
     
 })
 
-tickets.post('/sendsms', async (req, res) => {
-    data = {
-        client:req.body.client,
-        site: req.body
-    }
-    // Load the twilio module
-    var twilio = require('twilio');
 
-    // Create a new REST API client to make authenticated requests against the
-    // twilio back end
-    var client = new twilio("AC17b30add52d8f5f76436da678625e05d", "bcf168ea09cf822c3397d21bad9da2c9");
-
-    // Pass in parameters to the REST API using an object literal notation. The
-    // REST client will handle authentication and response serialzation for you.
-    client.messages.create({
-        to:'+584123462686',
-        from:'+19342028073',
-        body:'ahoy hoy! Testing Twilio and node.js'
-    }, function(error, message) {
-        // The HTTP request to Twilio will run asynchronously. This callback
-        // function will be called when a response is received from Twilio
-        // The "error" variable will contain error information, if any.
-        // If the request was successful, this value will be "falsy"
-        if (!error) {
-            // The second argument to the callback will contain the information
-            // sent back by Twilio for the request. In this case, it is the
-            // information about the text messsage you just sent:
-            console.log('Success! The SID for this SMS message is:');
-            console.log(message.sid);
-
-            console.log('Message sent on:');
-            console.log(message.dateCreated);
-        } else {
-            console.log('Oops! There was an error.');
-        }
-    });
-})
 
 module.exports = tickets
